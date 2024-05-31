@@ -4,6 +4,7 @@ import numpy as np
 import argparse
 import matplotlib.pyplot as plt
 import h5py
+from pathlib import Path
 
 from constants import PUPPET_GRIPPER_POSITION_NORMALIZE_FN, SIM_TASK_CONFIGS
 from ee_sim_env import make_ee_sim_env
@@ -24,14 +25,11 @@ def main(args):
     """
 
     task_name = args['task_name']
-    dataset_dir = args['dataset_dir']
     num_episodes = args['num_episodes']
     onscreen_render = args['onscreen_render']
     inject_noise = False
     render_cam_name = 'angle'
 
-    if not os.path.isdir(dataset_dir):
-        os.makedirs(dataset_dir, exist_ok=True)
 
     episode_len = SIM_TASK_CONFIGS[task_name]['episode_len']
     camera_names = SIM_TASK_CONFIGS[task_name]['camera_names']
@@ -155,10 +153,14 @@ def main(args):
             for cam_name in camera_names:
                 data_dict[f'/observations/images/{cam_name}'].append(ts.observation['images'][cam_name])
 
+        dataset_dir = Path("dataset") / task_name
+        dataset_dir.mkdir(parents=True, exist_ok=True)
+
         # HDF5
         t0 = time.time()
-        dataset_path = os.path.join(dataset_dir, f'episode_{episode_idx}')
-        with h5py.File(dataset_path + '.hdf5', 'w', rdcc_nbytes=1024 ** 2 * 2) as root:
+        dataset_path = dataset_dir / f'episode_{episode_idx}.hdf5'
+
+        with h5py.File(dataset_path, 'w', rdcc_nbytes=1024 ** 2 * 2) as root:
             root.attrs['sim'] = True
             obs = root.create_group('observations')
             image = obs.create_group('images')
@@ -180,9 +182,8 @@ def main(args):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--task_name', action='store', type=str, help='task_name', required=True)
-    parser.add_argument('--dataset_dir', action='store', type=str, help='dataset saving dir', required=True)
-    parser.add_argument('--num_episodes', action='store', type=int, help='num_episodes', required=False)
+    parser.add_argument('--task_name', action='store', default="sim_transfer_cube_scripted", type=str, help='task_name')
+    parser.add_argument('--num_episodes', action='store', type=int, default=50, help='num_episodes')
     parser.add_argument('--onscreen_render', action='store_true')
     
     main(vars(parser.parse_args()))
