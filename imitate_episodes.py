@@ -110,12 +110,16 @@ def main(args):
         pickle.dump(stats, f)
 
     best_ckpt_info = train_bc(train_dataloader, val_dataloader, config)
-    best_epoch, min_val_loss, best_state_dict = best_ckpt_info
+    best_epoch, min_val_loss, best_policy, best_state_dict = best_ckpt_info
 
     # save best checkpoint
     ckpt_path = os.path.join(ckpt_dir, f'policy_best.ckpt')
     torch.save(best_state_dict, ckpt_path)
     print(f'Best ckpt, val loss {min_val_loss:.6f} @ epoch{best_epoch}')
+
+    # save policy
+    policy_path = os.path.join(ckpt_dir, f'policy_best.pth')
+    torch.save(best_policy, policy_path)
 
 
 def make_policy(policy_class, policy_config):
@@ -351,7 +355,7 @@ def train_bc(train_dataloader, val_dataloader, config):
             epoch_val_loss = epoch_summary['loss']
             if epoch_val_loss < min_val_loss:
                 min_val_loss = epoch_val_loss
-                best_ckpt_info = (epoch, min_val_loss, deepcopy(policy.state_dict()))
+                best_ckpt_info = (epoch, min_val_loss, policy, deepcopy(policy.state_dict()))
         print(f'Val loss:   {epoch_val_loss:.5f}')
         summary_string = ''
         for k, v in epoch_summary.items():
@@ -380,12 +384,14 @@ def train_bc(train_dataloader, val_dataloader, config):
         if epoch % 100 == 0:
             ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{epoch}_seed_{seed}.ckpt')
             torch.save(policy.state_dict(), ckpt_path)
+            policy_best_path = os.path.join(ckpt_dir, f'policy_best.pth')
+            torch.save(policy, policy_best_path)
             plot_history(train_history, validation_history, epoch, ckpt_dir, seed)
 
     ckpt_path = os.path.join(ckpt_dir, f'policy_last.ckpt')
     torch.save(policy.state_dict(), ckpt_path)
 
-    best_epoch, min_val_loss, best_state_dict = best_ckpt_info
+    best_epoch, min_val_loss, best_policy, best_state_dict = best_ckpt_info
     ckpt_path = os.path.join(ckpt_dir, f'policy_epoch_{best_epoch}_seed_{seed}.ckpt')
     torch.save(best_state_dict, ckpt_path)
     print(f'Training finished:\nSeed {seed}, val loss {min_val_loss:.6f} at epoch {best_epoch}')
