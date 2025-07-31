@@ -1,0 +1,14 @@
+uv add torchvision
+uv add torch
+uv add pyquaternion
+uv add pyyaml
+uv add rospkg
+uv add pexpect
+uv add mujoco==2.3.7
+uv add dm_control==1.0.14
+uv add opencv-python
+uv add matplotlib
+uv add einops
+uv add packaging
+uv add h5py
+uv add ipython
